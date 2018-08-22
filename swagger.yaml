@@ -1,0 +1,28 @@
+swagger: "2.0"
+info:
+  title: TensorFlow Release API
+  version: "0.1"
+basePath: "/api/v1/"
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /tensorflow/release/{tf_version}:
+    post:
+      tags: [Deployment]
+      x-swagger-router-controller: tf_api_v1
+      operationId: release
+      summary: Makes a Post request to deploy the tensorflow release job.
+      parameters:
+        - name: tf_version
+          in: path
+          required: true
+          description: >
+            tensorflow version required for the tensorflow build generation.
+          type: string
+      responses:
+        202:
+          description: Successful response with tensorflow version.
+        400:
+          description: On invalid request.
