@@ -10,7 +10,7 @@ produces:
 paths:
   /tensorflow/release/{tf_version}:
     post:
-      tags: [Deployment]
+      tags: [Thoth]
       x-swagger-router-controller: tf_api_v1
       operationId: release
       summary: Makes a Post request to deploy the tensorflow release job.
@@ -25,4 +25,275 @@ paths:
         202:
           description: Successful response with tensorflow version.
         400:
+         description: On invalid request.
+
+  /tensorflow/custom-release:
+    post:
+      tags: [Developer]
+      x-swagger-router-controller: tf_api_v1
+      operationId: custom_release
+      summary: Makes a Post request to deploy the tensorflow release job.
+      parameters:
+        - name: PY_VERSION
+          description: Wheels generated for python version.
+          required: true
+          in: body
+          schema:
+            $ref: "#/definitions/Python"
+        - name: OS
+          type: string
+          description: |
+            Wheels files to be generated for os version.
+            Choose from here 
+            ["Fedora27","Fedora28","RHEL75","Centos7",
+            "Fedora27gpu","Fedora28gpu","RHEL75gpu","Centos7gpu"]
+          required: true
+          in: query
+          default: "Fedora27"
+        - name: S2I_IMAGE
+          description: |
+              Source Image of the operating system 
+              Choose based upon the os version:
+              registry.fedoraproject.org/f27/s2i-core, 
+              registry.fedoraproject.org/f28/s2i-core, 
+              registry.access.redhat.com/rhscl/s2i-core-rhel7, 
+              openshift/base-centos7
+          default: "registry.fedoraproject.org/f27/s2i-core"
+          required: true
+          in: query
+          type: string
+        - name: TENSORFLOW_VERSION
+          description: version of tensorflow.
+          default: '1.9.0'
+          required: true
+          in: query
+          type: string
+        - name: GITHUB_ACCESS_TOKEN
+          description: GITHUB_ACCESS_TOKEN default is required if you release to github
+          default: ''
+          required: true
+          in: query
+          type: string
+        - name: GIT_RELEASE_REPO
+          description: GIT_RELEASE_REPO
+          default: 'https://github.com/AICoE/tensorflow-wheels.git'
+          required: true
+          in: query
+          type: string
+        - name: RESOURCE_LIMITS_CPU
+          description: Resource limits for Openshft quota CPU (For CPU:4 min, For GPU:6 min)
+          default: "4"
+          in: query
+          type: string
+          required: true
+        - name: RESOURCE_LIMITS_MEMORY
+          description: Resource limits for Openshft quota Memory (For CPU:8Gi min, For GPU:10Gi min)
+          default: "8Gi"
+          in: query
+          type: string
+          required: true
+        - name: SOURCE_REPOSITORY
+          description: Git repository for source.
+          default: 'https://github.com/thoth-station/tensorflow-build-s2i.git'
+          required: true
+          in: query
+          type: string
+        - name: BAZEL_VERSION
+          description: BAZEL_VERSION
+          default: 0.11.0
+          required: true
+          in: query
+          type: string
+        - name: GENERIC_WEBHOOK_SECRET
+          description: A secret string used to configure the Generic webhook.
+          default: ''
+          required: true
+          in: query
+          type: string
+        - name: VERSION
+          description: Version of the build image, i.e docker image tag
+          default: latest
+          required: true
+          in: query
+          type: string
+        - name: RESOURCE_QUOTA
+          description: If resource quota check is to be executed or not
+          default: "1"
+          in: query
+          type: string
+          required: false
+        - name: QUOTA_NAME
+          description: Name of the resource quota on openshift
+          required: false
+          in: query
+          default: ''
+          type: string
+        - name: CUSTOM_BUILD
+          description: Set to custom BUILD command
+          default: bazel build --copt=-mavx --copt=-mavx2 --copt=-mfma --copt=-mfpmath=both
+            --copt=-msse4.2  --cxxopt='-D_GLIBCXX_USE_CXX11_ABI=0' --verbose_failures //tensorflow/tools/pip_package:build_pip_package
+          required: false
+          in: query
+          type: string
+        - name: BUILD_OPTS
+          description: Custom options to bazel BUILD command
+          default: ''
+          required: false
+          in: query
+          type: string
+        - name: TF_CUDA_VERSION
+          description: TF_CUDA_VERSION depends on TF_NEED_CUDA
+          default: '9.2'
+          required: false
+          in: query
+          type: string
+        - name: TF_CUDA_COMPUTE_CAPABILITIES
+          description: TF_CUDA_COMPUTE_CAPABILITIES depends on TF_NEED_CUDA
+          default: '3.0,3.5,5.2,6.0,6.1,7.0'
+          required: false
+          in: query
+          type: string
+        - name: TF_CUDNN_VERSION
+          description: TF_CUDNN_VERSION depends on TF_NEED_CUDA
+          default: '7'
+          required: false
+          in: query
+          type: string
+        - name: CUDA_TOOLKIT_PATH
+          description: CUDA_TOOLKIT_PATH depends on TF_NEED_CUDA
+          default: '/usr/local/cuda'
+          required: true
+          in: query
+          type: string
+        - name: CUDNN_INSTALL_PATH
+          description: CUDNN_INSTALL_PATH depends on TF_NEED_CUDA
+          default: '/usr/local/cuda'
+          required: true
+          in: query
+          type: string
+        - name: GCC_HOST_COMPILER_PATH
+          description: GCC_HOST_COMPILER_PATH depends on TF_NEED_CUDA
+          default: '/usr/bin/gcc'
+          required: true
+          in: query
+          type: string
+        - name: TF_CUDA_CLANG
+          description: TF_CUDA_CLANG
+          default: '0'
+          required: true
+          in: query
+          type: string
+        - name: TF_NEED_JEMALLOC
+          description: TF_NEED_JEMALLOC
+          default: '1'
+          required: true
+          in: query
+          type: string
+        - name: TF_NEED_GCP
+          description: TF_NEED_GCP
+          default: '0'
+          required: true
+          in: query
+          type: string
+        - name: TF_NEED_VERBS
+          description: TF_NEED_VERBS
+          default: '0'
+          required: true
+          in: query
+          type: string
+        - name: TF_NEED_HDFS
+          description: TF_NEED_HDFS
+          default: '0'
+          required: true
+          in: query
+          type: string
+        - name: TF_ENABLE_XLA
+          description: TF_ENABLE_XLA
+          default: '0'
+          required: true
+          in: query
+          type: string
+        - name: TF_NEED_OPENCL
+          description: TF_NEED_OPENCL
+          default: '0'
+          required: true
+          in: query
+          type: string
+        - name: TF_NEED_CUDA
+          description: TF_NEED_CUDA
+          default: '0'
+          required: true
+          in: query
+          type: string
+        - name: TF_NEED_MPI
+          description: TF_NEED_MPI
+          default: '0'
+          required: true
+          in: query
+          type: string
+        - name: TF_NEED_GDR
+          description: TF_NEED_GDR
+          default: '0'
+          required: true
+          in: query
+          type: string
+        - name: TF_NEED_S3
+          description: TF_NEED_S3
+          default: '0'
+          required: true
+          in: query
+          type: string
+        - name: TF_NEED_KAFKA
+          description: TF_NEED_KAFKA
+          default: '0'
+          required: true
+          in: query
+          type: string
+        - name: TF_NEED_OPENCL_SYCL
+          description: TF_NEED_OPENCL_SYCL
+          default: '0'
+          required: true
+          in: query
+          type: string
+        - name: TF_DOWNLOAD_CLANG
+          description: TF_DOWNLOAD_CLANG
+          default: '0'
+          required: true
+          in: query
+          type: string
+        - name: TF_SET_ANDROID_WORKSPACE
+          description: TF_SET_ANDROID_WORKSPACE
+          default: '0'
+          required: true
+          in: query
+          type: string
+        - name: TF_NEED_TENSORRT
+          description: TF_NEED_TENSORRT
+          default: '0'
+          required: true
+          in: query
+          type: string
+        - name: NCCL_INSTALL_PATH
+          description: "/usr/local/nccl-2.2"
+          default: '/usr/local/nccl-2.2'
+          required: true
+          in: query
+          type: string
+        - name: TEST_WHEEL_FILE
+          description: "(y or n)To run a simple test code to test wheel file."
+          default: 'y'
+          required: true
+          in: query
+          type: string
+      responses:
+        202:
+          description: Successful response.
+        400:
           description: On invalid request.
+  
+definitions:
+  Python:
+    type: array
+    example: ["2.7","3.5","3.6"]
+    items:
+      type: string

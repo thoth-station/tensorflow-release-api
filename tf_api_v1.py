@@ -22,7 +22,7 @@ def tf_job_spec(OCP_SECRET, TF_GIT_BRANCH, SESHETA_GITHUB_ACCESS_TOKEN, BUILD_MA
                 "spec": {
                     "containers": [
                         {
-                            "image": "quay.io/harshad16/aicoe-work:latest",
+                            "image": "quay.io/aicoe/tensorflow-release-job",
                             "name": "tensorflow-release-job",
                             "env": [
                                 {
@@ -100,11 +100,13 @@ def tf_release_job(job, url, namespace, headers):
 
 def release(tf_version):
     urllib3.disable_warnings()
-    # Application Variable
+    # Application Variable  
+    TF_GIT_BRANCH = tf_version if 'r' in tf_version else 'r'+ tf_version
     OCP_SECRET = os.getenv('OCP_SECRET', '{}') 
-    TF_GIT_BRANCH = tf_version
     SESHETA_GITHUB_ACCESS_TOKEN = os.getenv('SESHETA_GITHUB_ACCESS_TOKEN', "")
-    BUILD_MAP = os.getenv('BUILD_MAP', '{}')
+    with open('config.json', 'r') as f:
+        config_data = f.read()
+    BUILD_MAP = json.dumps(json.loads(config_data))
     namespace = os.getenv('OCP_NAMESPACE', '')  # set default inplace default quotes
     url = os.getenv('OCP_URL', '')  # set default inplace default quotes
     access_token = os.getenv('OCP_TOKEN', '')  # set default inplace default quotes
@@ -114,17 +116,54 @@ def release(tf_version):
         'Accept': 'application/json',
         'Connection': 'close'
     }
-    print("-------------------VARIABLES-------------------------")
-    print("OCP_SECRET: ", OCP_SECRET)
-    print("TF_GIT_BRANCH", TF_GIT_BRANCH)
-    print("SESHETA_GITHUB_ACCESS_TOKEN", SESHETA_GITHUB_ACCESS_TOKEN)
-    print("BUILD_MAP", BUILD_MAP)
-    print("namespace", namespace)
-    print("url", url)
-    print("access_token", access_token)
-    print("-----------------------------------------------------")
+    # print("-------------------VARIABLES-------------------------")
+    # print("OCP_SECRET: ", OCP_SECRET)
+    # print("TF_GIT_BRANCH", TF_GIT_BRANCH)
+    # print("SESHETA_GITHUB_ACCESS_TOKEN", SESHETA_GITHUB_ACCESS_TOKEN)
+    # print("BUILD_MAP", BUILD_MAP)
+    # print("namespace", namespace)
+    # print("url", url)
+    # print("access_token", access_token)
+    # print("-----------------------------------------------------")
     job = tf_job_spec(OCP_SECRET, TF_GIT_BRANCH, SESHETA_GITHUB_ACCESS_TOKEN, BUILD_MAP)
     if job:
         tf_release_job(job, url, namespace, headers)
+        return 202
     else:
-        raise Exception("Can't create the tensorflow-release-job")
+        return 400
+
+def custom_release(**opts):
+    urllib3.disable_warnings()
+    TF_GIT_BRANCH = 'r'+opts.pop('TENSORFLOW_VERSION')
+    SESHETA_GITHUB_ACCESS_TOKEN = opts.pop('GITHUB_ACCESS_TOKEN')
+    PY_VERSION = opts.pop('PY_VERSION')
+    OS=opts.pop('OS') 
+    BUILD_MAP= {py: {} for py in PY_VERSION}
+    for key,value in BUILD_MAP.items():
+        BUILD_MAP[key] = { OS : {k:v for k,v in opts.items()}}
+    print("BUILD_MAP", BUILD_MAP)
+    OCP_SECRET = os.getenv('OCP_SECRET', '{}') 
+    namespace = os.getenv('OCP_NAMESPACE', '')  # set default inplace default quotes
+    url = os.getenv('OCP_URL', '')  # set default inplace default quotes
+    access_token = os.getenv('OCP_TOKEN', '')  # set default inplace default quotes
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer {}'.format(access_token),
+        'Accept': 'application/json',
+        'Connection': 'close'
+    }
+    # print("-------------------VARIABLES-------------------------")
+    # print("OCP_SECRET: ", OCP_SECRET)
+    # print("TF_GIT_BRANCH", TF_GIT_BRANCH)
+    # print("SESHETA_GITHUB_ACCESS_TOKEN", SESHETA_GITHUB_ACCESS_TOKEN)
+    # print("BUILD_MAP", BUILD_MAP)
+    # print("namespace", namespace)
+    # print("url", url)
+    # print("access_token", access_token)
+    # print("-----------------------------------------------------")
+    job = tf_job_spec(OCP_SECRET, TF_GIT_BRANCH, SESHETA_GITHUB_ACCESS_TOKEN, json.dumps(BUILD_MAP))
+    if job:
+        tf_release_job(job, url, namespace, headers)
+        return 202
+    else:
+        return 400    
